@@ -1,0 +1,121 @@
+<link href="stylesheet/drag_styles.css" />
+<script src="javascripts/utils.js"></script>
+<script src="javascripts/Utilities.js"></script>
+<script src="javascripts/SVGEditor.js"></script>
+
+{{! type="module" }}
+<script src="javascripts/shapes/Point.js"></script>
+<script src="javascripts/shapes/Line.js"></script>
+<script src="javascripts/shapes/Rectangle.js"></script>
+<script src="javascripts/shapes/Circle.js"></script>
+
+<style>
+  .noborder{ border: 0; } .mysplitter{ margin: 0px; } html, body { height: 100%;
+  margin: 0px; } canvas { display: block;
+  {{! position:relative; }}
+  } .CanvasContainer{ overflow: scroll; }
+</style>
+<div class="container-fluid h-100">
+
+  {{! navbar row }}
+  <div class="row" style="height: 70px;">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand">{{title}}</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <button
+                type="button"
+                class="btn noborder btn-primary"
+              >Select</button>
+            </li>
+            <li class="nav-item">
+              <button
+                type="button"
+                class="btn noborder btn-outline-primary"
+              >Hand</button>
+            </li>
+            <li class="nav-item">
+              {{! spliter }}
+              <a class="navbar-brand mysplitter">|</a>
+            </li>
+            <li class="nav-item">
+              <button
+                type="button"
+                class="btn noborder btn-outline-primary"
+              >Seat Rows</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  {{! page body row }}
+  <div class="row" style="height: calc(100% - 70px);">
+    <div class="container-fluid h-100">
+      <div class="row h-100">
+        <div
+          class="col-9 h-100 position-relative"
+          style="background-color: #666666;"
+        >
+
+          <div
+            class="position-absolute top-50 start-50 translate-middle CanvasContainer"
+            {{! style="height: calc(100% - 20px); width: calc(100% - 20px);" }}
+            style="height: 100%; width: 100%;"
+            id="CanvasContainer"
+          >
+
+            <canvas id="Canvas" style="background-color: #F3F3F3;">
+              Your browser does not support the HTML5 canvas tag.
+            </canvas>
+
+          </div>
+
+        </div>
+        <div
+          class="col-3 container"
+          style="background-color: #FEFEFE;padding-top: 10px;"
+        >
+          <div class="col">
+            SECTOR
+          </div>
+          <hr />
+          <div class="col">
+            ALIGN ROWS
+          </div>
+          <hr />
+          <div class="col">
+            ADD ROWS
+          </div>
+          <hr />
+          <div class="col">
+            TRANSFORM
+          </div>
+          <hr />
+          <div class="col">
+            ACTIONS
+          </div>
+          <hr />
+          <div>
+            <small><small id="LableMousePosition"></small></small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
