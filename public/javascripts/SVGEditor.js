@@ -1,5 +1,5 @@
 //ToDo
-// fix IsMovingSelectedElements = false; and movment of selected elements
+// fix IsMovingSelectedElementsAndNotCreatingSelectionBox = false; and movment of selected elements
 
 ////////////////////////////////////
 // Constractor
@@ -50,7 +50,7 @@ var CanvasContext;
 var Elements;
 
 var IsMouseDown = false;
-var IsMovingSelectedElements;
+var IsMovingSelectedElementsAndNotCreatingSelectionBox;
 var SelectedElements = [];
 var SelectionBox;
 
@@ -103,9 +103,10 @@ function SelectElementAt(MousePosition) {
   for (var i = Elements.length - 1; i >= 0; i--)
     if (Elements[i].IsPointInElement(MousePosition.X, MousePosition.Y))
       return Elements[i];
-  return false;
+  return null;
 }
 
+// Check if mouse in same position as last mouse down
 function IsCurrentPointSameLast() {
   return (
     CurrentMouseDownPosition.X == LastMouseDownPosition.X &&
@@ -129,47 +130,68 @@ function MouseDown(e) {
     return;
   }
 
+  // if current click not on one of selected elements then make selection posiple
+  var ElementInCurrentPosition = SelectElementAt(CurrentMouseDownPosition);
+  if (SelectedElements.includes(ElementInCurrentPosition))
+    IsMovingSelectedElementsAndNotCreatingSelectionBox = true;
+  else if (ElementInCurrentPosition == null)
+    IsMovingSelectedElementsAndNotCreatingSelectionBox = false;
+  else {
+    ElementInCurrentPosition.ResetTempPosition();
+    SelectedElements = [ElementInCurrentPosition];
+    IsMovingSelectedElementsAndNotCreatingSelectionBox = true;
+  }
+
   // Save mouse down position
   LastMouseDownPosition = CurrentMouseDownPosition;
   IsMouseDown = true;
   UpdateUI();
 }
 
-function MouseUp(e) {
+function MouseUpBKB(e) {
   // 	- if there is no mousedown then return
   // //- if position is same as mousedown then select
   // - if there already started selection box then save selected items into the list
   // handle selection stuff
+  var debugLine = [" - MouseUp():"];
 
-  IsMovingSelectedElements = false;
+  //IsMovingSelectedElementsAndNotCreatingSelectionBox = false;
+  var tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = false;
   if (!IsMouseDown) return;
 
   // Save current mouse position
   CurrentMouseDownPosition = { X: MouseX(e), Y: MouseY(e) };
 
-  // Check if mouse is clicked one element
+  // Check if mouseup is clicked one element
   if (IsCurrentPointSameLast()) {
+    debugLine.push("IsCurrentPointSameLast = true");
     // User clicked on same point
     var SelectedElement = SelectElementAt(CurrentMouseDownPosition);
 
     if (SelectedElement) {
+      debugLine.push("SelectedElement = true");
       // User clicked on one element
       if (SelectedElements.includes(SelectedElement)) {
+        debugLine.push("SelectedElement.includes(SelectedElement) = true");
         // User clicked on one element that is selected
         // Keep selections so user can move them if he want
-        IsMovingSelectedElements = true;
       } else {
+        debugLine.push("SelectedElement.includes(SelectedElement) = false");
         // User clicked on one element that is not selected
         // Select only that element
         SelectedElement.ResetTempPosition();
         SelectedElements = [SelectedElement];
       }
+      tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = true;
     } else {
+      debugLine.push("SelectedElement = false");
       // User clicked on different point (empty space)
       // Deselect all
       SelectedElements = [];
     }
   } else {
+    debugLine.push("IsCurrentPointSameLast = false");
+
     // save new selected elements positions
     for (var i = 0; i < SelectedElements.length; i++) {
       SelectedElements[i].SaveTempPosition();
@@ -183,7 +205,7 @@ function MouseUp(e) {
         Elements[i].ResetTempPosition();
         SelectedElements.push(Elements[i]);
       }
-    IsMovingSelectedElements = true;
+    tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = true;
     SelectionBox = null;
   }
 
@@ -195,6 +217,113 @@ function MouseUp(e) {
   // Save mouse down position
   LastMouseDownPosition = CurrentMouseDownPosition;
   IsMouseDown = false;
+  IsMovingSelectedElementsAndNotCreatingSelectionBox =
+    tmpIsMovingSelectedElementsAndNotCreatingSelectionBox;
+
+  debugLine.push("");
+  debugLine.push("SelectedElements.length: " + SelectedElements.length);
+  debugLine.push(
+    "IsMovingSelectedElementsAndNotCreatingSelectionBox: " +
+      IsMovingSelectedElementsAndNotCreatingSelectionBox
+  );
+  debugLine.push("LastMouseDownPosition: " + LastMouseDownPosition);
+  console.log(debugLine.join("\n"));
+  UpdateUI();
+}
+
+function MouseUp(e) {
+  // 	- if there is no mousedown then return
+  // //- if position is same as mousedown then select
+  // - if there already started selection box then save selected items into the list
+  // handle selection stuff
+
+  if (!IsMouseDown) return;
+
+  var debugLine = [" - MouseUp():"];
+  var tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = false;
+
+  // Save current mouse position
+  CurrentMouseDownPosition = { X: MouseX(e), Y: MouseY(e) };
+
+  // Check if mouseup is clicked one element
+  var ElementInCurrentPosition = SelectElementAt(CurrentMouseDownPosition);
+
+  // User clicked one element -> select it
+  if (
+    IsCurrentPointSameLast() &&
+    ElementInCurrentPosition != null &&
+    !SelectedElements.includes(ElementInCurrentPosition)
+  ) {
+    debugLine.push("User clicked one element -> select it");
+    ElementInCurrentPosition.ResetTempPosition();
+    SelectedElements = [ElementInCurrentPosition];
+    tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = true;
+  }
+  // User clicked on element that was selected
+  else if (
+    ElementInCurrentPosition != null &&
+    SelectedElements.includes(ElementInCurrentPosition)
+  ) {
+    debugLine.push("User clicked on element that was selected");
+    SelectedElements.forEach((e) => e.SaveTempPosition());
+    tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = true;
+  }
+  // User Clicked on empty space -> deselect all
+  else if (IsCurrentPointSameLast() && ElementInCurrentPosition == null) {
+    debugLine.push("User Clicked on empty space -> deselect all");
+    for (var i = 0; i < SelectedElements.length; i++)
+      SelectedElements[i].SaveTempPosition();
+    SelectedElements = [];
+  }
+  // User was moving selected elements and now he clicked on one of them -> save new selected elements positions
+  else if (
+    !IsCurrentPointSameLast() &&
+    SelectedElements.length > 0 &&
+    IsMovingSelectedElementsAndNotCreatingSelectionBox
+  ) {
+    debugLine.push(
+      "User was moving selected elements and now he clicked on one of them -> save new selected elements positions"
+    );
+    for (var i = 0; i < SelectedElements.length; i++)
+      SelectedElements[i].SaveTempPosition();
+  }
+  // User make selection box -> select all elements in selection box
+  else if (
+    !IsMovingSelectedElementsAndNotCreatingSelectionBox &&
+    SelectionBox != null
+  ) {
+    debugLine.push(
+      "User make selection box -> select all elements in selection box"
+    );
+    SelectedElements = [];
+    for (var i = 0; i < Elements.length; i++)
+      if (Elements[i].IsElementInArea(SelectionBox)) {
+        Elements[i].ResetTempPosition();
+        SelectedElements.push(Elements[i]);
+      }
+    tmpIsMovingSelectedElementsAndNotCreatingSelectionBox = true;
+  }
+
+  // Log all selected elements for debuging
+  for (var i = 0; i < SelectedElements.length; i++) {
+    console.log(SelectedElements[i].id);
+  }
+
+  // Save mouse down position
+  LastMouseDownPosition = CurrentMouseDownPosition;
+  IsMouseDown = false;
+  SelectionBox = null;
+  IsMovingSelectedElementsAndNotCreatingSelectionBox =
+    tmpIsMovingSelectedElementsAndNotCreatingSelectionBox;
+
+  debugLine.push("");
+  debugLine.push("SelectedElements.length: " + SelectedElements.length);
+  debugLine.push(
+    "IsMovingSelectedElementsAndNotCreatingSelectionBox: " +
+      IsMovingSelectedElementsAndNotCreatingSelectionBox
+  );
+  debugLine.push("LastMouseDownPosition: " + LastMouseDownPosition);
+  console.log(debugLine.join("\n"));
   UpdateUI();
 }
 
@@ -213,7 +342,10 @@ function MouseMove(e) {
   if (!IsMouseDown) return;
 
   // Check if mouse is on one of selected elements
-  if (SelectedElements.length > 0 && IsMovingSelectedElements) {
+  if (
+    SelectedElements.length > 0 &&
+    IsMovingSelectedElementsAndNotCreatingSelectionBox
+  ) {
     // Move all selected elements as mose is moving
     for (var i = 0; i < SelectedElements.length; i++) {
       SelectedElements[i].TempPosition(
